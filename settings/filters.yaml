@@ -1,0 +1,47 @@
+age_from: 20 # возраст от
+age_to: 50   # возраст до
+area:
+- 1505
+- 67
+- 1511
+- 1844
+- 1661
+- 1438
+- 1679
+- 1051
+- 1575
+- 1090
+- 1620
+- 1624
+- 1530
+- 1704
+- 1586
+- 1596
+- 1103
+- 1481
+- 1614
+- 1652
+- 1806
+citizenship: 113
+employment:
+- full
+- part
+job_search_status:
+- active_search
+- looking_for_offers
+label:
+- only_with_age
+- exclude_viewed_by_employer_id
+page: 0
+per_page: 100
+period: 3
+professional_role:
+- 83
+salary_to: 50000
+schedule:
+- fullDay
+- shift
+- flexible
+- remote
+text: Оператор call центра
+with_job_search_status: 'true'
