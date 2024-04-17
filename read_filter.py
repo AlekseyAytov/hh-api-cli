@@ -22,7 +22,7 @@ class SearchParams:
         return dict(zip(df[df.columns[0]], df[df.columns[1]]))
     
     def __loadFilters(self) -> None:
-        df = pd.read_excel(self.__filter_file, usecols=[0, 2], na_values=" ")
+        df = pd.read_excel(self.__filter_file, usecols=[0, 2], na_values=" ", dtype=str)
         df = df.dropna()
         keys = df.columns[0]
         values = df.columns[1]
