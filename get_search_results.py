@@ -55,10 +55,6 @@ if __name__ == '__main__':
     data = result.get_search_results()
     print(len(data))
 
-    # closeRe = list(filter(lambda x: x["an_view_full_info"], data))
-    # print(len(closeRe))
-
-
     with open("data_2.json", "w", encoding='utf8') as fh:
         json.dump(data, fh, ensure_ascii=False)
 

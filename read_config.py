@@ -46,7 +46,6 @@ class Settings:
             "Authorization": "Bearer " + self.access_token
         }
     
-    # @staticmethod
     # def update_params(self, section, parameter, value):
     #     config = ConfigParser()
     #     config.read(self.seting_file_path)

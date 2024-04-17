@@ -15,20 +15,17 @@ class Storage:
         self.file   = settings.result_file   if settings.result_file   else self.EFAULT_FILE_NAME
         self.final_path = os.path.join(self.folder, self.file)
 
-    @staticmethod
-    def add_time_mark(self) -> None:
+    def __add_time_mark(self) -> None:
         # timestr = time.strftime("%Y%m%d-%H%M%S")
         timestr = time.strftime("%Y%m%d")
         head, tail = os.path.splitext(self.final_path)
         self.final_path = f"{head}_{timestr}{tail}"
 
-    @staticmethod
-    def check_folder(self) -> None:
+    def __check_folder(self) -> None:
         if not os.path.isdir(self.folder):
             os.makedirs(self.folder)
 
-    @staticmethod
-    def check_file(self) -> None:
+    def __check_file(self) -> None:
         if os.path.exists(self.final_path):
             head, tail = os.path.splitext(self.final_path)
             count = 1
@@ -36,8 +33,7 @@ class Storage:
                 count += 1
             self.final_path = f"{head}({count}){tail}"
 
-    @staticmethod
-    def check_file_2(self) -> None:
+    def __check_file_2(self) -> None:
         if os.path.exists(self.final_path):
             folder, name = os.path.split(self.final_path)
             head, tail = os.path.splitext(name)
@@ -53,9 +49,9 @@ class Storage:
             self.final_path = os.path.join(self.folder, f"{head}({max_number+1}){tail}")
 
     def save_to_excel(self, data: dict) -> None:
-        self.add_time_mark(self)
-        self.check_folder(self)
-        self.check_file_2(self)
+        self.__add_time_mark(self)
+        self.__check_folder(self)
+        self.__check_file_2(self)
 
         df = pd.DataFrame.from_dict(data)
         df.to_excel(self.final_path, index=False)
