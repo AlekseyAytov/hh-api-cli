@@ -6,7 +6,6 @@ import json
 
 class Search:
     all_data: list = []
-    payload: dict = {}
 
     def __init__(self, settings: Settings, filter: SearchParams) -> None:
         self.settings = settings
@@ -61,7 +60,7 @@ if __name__ == '__main__':
     searcher = Search(settings=s, filter=f)
     data = searcher.get_search_results()
     if len(data) > 0:
-        with open("data_2.json", "w", encoding='utf8') as fh:
+        with open("test_data_2.json", "w", encoding='utf8') as fh:
             json.dump(data, fh, ensure_ascii=False)
 
 

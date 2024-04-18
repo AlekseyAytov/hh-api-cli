@@ -4,3 +4,6 @@ class AuthenticationError(Exception):
 
 class SearchRequestError(Exception):
     """ Error while making search request """
+
+class OpenResumeError(Exception):
+    """ Error while making request for open resume with contacts"""

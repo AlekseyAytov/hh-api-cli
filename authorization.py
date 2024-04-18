@@ -30,7 +30,7 @@ class Authorize:
             userName    =  f"{last_name} {first_name} {middle_name}"
             return (userName, None)
         else:
-            print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
+            # print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
             return (None, response.status_code)
 
     def __getAccessToken(self) -> tuple[str, int]:

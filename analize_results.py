@@ -3,32 +3,96 @@ import time
 import requests
 from read_config import Settings
 from read_filter import SearchParams
+from typing import NamedTuple
+from errors import OpenResumeError
+
+class ItemsCounter(NamedTuple):
+    opened:   int
+    closed:   int
+    can_open: int
 
 
 class Analizer:
 
-    __all_data: list[dict] = []
+    __parsed_data: list[dict] = []
+    __raw_data:    list[dict] = []
 
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
 
-    def get_data(self):
-        return self.__all_data
-
-    # resume_url - url для запроса
-    def get_resume(self, resume_url):
-        response = requests.request("GET", resume_url, headers=self.settings.header)
-        if response.status_code == 200:
-            return response.json()
-        else:
-            return None
+    def get_data(self, from_data):
+        self.__analize(from_data)
+        return self.__parsed_data
         
-    def analize(self, items) -> None:
+    def __make_request(self, resume_url):
+        response = requests.request("GET", resume_url, headers=self.settings.headers)
+
+        if response.status_code == 200:
+            page_json   = response.json()
+            return (page_json, None)
+        else:
+            print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
+            return (None, response.status_code)
+        
+    def __open_resume(self, url):
+        page_data, error_code = self.__make_request(url)
+        match error_code:
+            case None:
+                print("Резюме открыто.")
+                self.__raw_data.append(page_data)
+                self.__parse_resume(page_data)
+            case 403:
+                print("Требуется авторизация пользователя")
+            case 404:
+                print("Резюме не существует или недоступно для текущего пользователя")
+            case 429:
+                print("Для работодателя превышен лимит просмотров резюме в сутки")
+            case _:
+                raise OpenResumeError
+    
+    def __analize(self, items) -> list[dict]:
+        counter = self.__items_count(items)
+        print(f"Результаты поиска: загружено {len(items)} из них {counter.opened} открыто, {counter.closed} закрыто для просмотра контактов.")
+        print(f"Возможны к открытию: {counter.can_open} резюме.")
         for item in items:
-            self.all_data.append({"hh_id": item["id"]})
+            open_url = item["actions"]["get_with_contact"]["url"] if item.get("actions", False) and item["actions"].get("get_with_contact", False) else None
+            if open_url:
+                title = item.get("title", "")
+                age = item.get("age", "")
+                area = item["area"]["name"] if item.get("area", False) else ""
+
+                while True:
+                    question = input(f'Открыть контакты резюме: {title}, возраст {age}, регион {area}? (y/n)')
+                    if question == 'y':
+                        print("Открываем...")
+                        self.__open_resume(open_url)
+                        break
+                    elif question == "n":
+                        print("Пропускаем...")
+                        break
+                    else:
+                        print("Некорректный ввод...")
+
+        self.__save_raw_data()
+    
+    def __items_count(self, items) -> ItemsCounter:
+        opened = 0
+        closed = 0
+        can_open = 0
+        for item in items:
+            if item.get("can_view_full_info", False):
+                opened += 1
+            else:
+                closed += 1
+            
+            if item.get("actions", False) and item["actions"].get("get_with_contact", False):
+                can_open += 1
+
+        return ItemsCounter(opened=opened, closed=closed, can_open=can_open)
+
 
     # распарсить номер мобльного
-    def __parse_phone_number(contacts) -> str:
+    def __parse_phone_number(self, contacts) -> str:
         for i in contacts:
             if i["type"]["id"] == "cell":
                 country_code = i["value"]["country"]
@@ -52,7 +116,9 @@ class Analizer:
         cell_phone = self.__parse_phone_number(resume["contact"])
         timestr = time.strftime('%d.%m.%Y')
 
-        self.__all_data.append({
+        link = resume["alternate_url"]
+
+        self.__parsed_data.append({
             "Date":  timestr,
             "ID":    resume_id,
             "Phone": cell_phone,
@@ -60,34 +126,26 @@ class Analizer:
             "Area":  area,
             "Age":   age,
             "Title": wish_title,
+            "url":   link,
         })
+
+    def __save_raw_data(self):
+        if len(self.__raw_data) > 0:
+            with open("raw_data_of_last_analize.json", "w", encoding='utf8') as fh:
+                json.dump(data, fh, ensure_ascii=False)
+
 
 
 if __name__ == '__main__':
-    with open("data_2.json", "r") as fh:
+    with open("test_data_2.json", "r") as fh:
         data = json.load(fh)
 
     s = Settings()
     analizer = Analizer(settings=s)
-    analizer.analize(data)
-    print(analizer.get_data())
+    data = analizer.get_data(data)
 
-    # print(f'Поисковая выдача составляет: {len(data)}')
-
-    # for item in data:
-    #     # если контакты доступны к просмотру
-    #     if item["can_view_full_info"]:
-    #         # получить резюме по url
-    #         response = get_resume_info(item["url"])
-    #     else:
-    #         if input(f'Открыть контакты резюме? {item["title"]}, возраст {item["age"]} (да-Enter)') == '':
-    #             response = get_resume_info(item["actions"]["get_with_contact"]["url"])
-    #     if response.status_code == 200:
-    #         resume = response.json()
-    #         data_dict = get_info_from_resume(resume)
-    #         write_to_csv(data_dict)
-    #         print(f'{data_dict["ID"]}: {data_dict["Name"]}, {data_dict["Area"]}, {data_dict["Age"]}, {data_dict["Title"]}, {data_dict["Phone"]}')
-    #     else:
-    #         print(f'Ошибка: {response.status_code} - {response.text}')
+    if len(data) > 0:
+        with open("test_data_resume.json", "w", encoding='utf8') as fh:
+            json.dump(data, fh, ensure_ascii=False)
 
 
