@@ -2,6 +2,4 @@ access_data.txt
 
 /results/
 
-test_data*.json
-
-raw_data*
+/debug_data/

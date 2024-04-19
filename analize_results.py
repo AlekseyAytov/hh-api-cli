@@ -5,6 +5,7 @@ from read_config import Settings
 from read_filter import SearchParams
 from typing import NamedTuple
 from errors import OpenResumeError
+from save_results import Storage
 
 class ItemsCounter(NamedTuple):
     opened:   int
@@ -17,12 +18,16 @@ class Analizer:
     __parsed_data: list[dict] = []
     __raw_data:    list[dict] = []
 
-    def __init__(self, settings: Settings) -> None:
+    def __init__(self, settings: Settings, storage: Storage) -> None:
         self.settings = settings
+        self.storage = storage
 
-    def get_data(self, from_data):
+    # def get_data(self, from_data):
+    #     self.__analize(from_data)
+    #     return self.__parsed_data
+    
+    def analize(self, from_data):
         self.__analize(from_data)
-        return self.__parsed_data
         
     def __make_request(self, resume_url):
         response = requests.request("GET", resume_url, headers=self.settings.headers)
@@ -54,7 +59,12 @@ class Analizer:
         counter = self.__items_count(items)
         print(f"Результаты поиска: загружено {len(items)} из них {counter.opened} открыто, {counter.closed} закрыто для просмотра контактов.")
         print(f"Возможны к открытию: {counter.can_open} резюме.")
+
+        interruption_flag = False
         for item in items:
+            if interruption_flag:
+                break
+
             open_url = item["actions"]["get_with_contact"]["url"] if item.get("actions", False) and item["actions"].get("get_with_contact", False) else None
             if open_url:
                 title = item.get("title", "")
@@ -62,18 +72,30 @@ class Analizer:
                 area = item["area"]["name"] if item.get("area", False) else ""
 
                 while True:
-                    question = input(f'Открыть контакты резюме: {title}, возраст {age}, регион {area}? (y/n)')
-                    if question == 'y':
-                        print("Открываем...")
-                        self.__open_resume(open_url)
-                        break
-                    elif question == "n":
-                        print("Пропускаем...")
-                        break
-                    else:
-                        print("Некорректный ввод...")
+                    question = input(f'Открыть контакты резюме: {title}, возраст {age}, регион {area}? (y-yes/n-no/s-stop)')
 
-        self.__save_raw_data()
+                    match question:
+                        case "y":
+                            print("Открываем...")
+                            try:
+                                self.__open_resume(open_url)
+                            except:
+                                self.storage.save_to_excel(self.__parsed_data)
+                                raise OpenResumeError
+                            break
+                        case "n":
+                            print("Пропускаем...")
+                            break
+                        case "s":
+                            self.storage.save_to_excel(self.__parsed_data)
+                            print("Прерывание...")
+                            interruption_flag = True
+                            break
+                        case _:
+                            print("Некорректный ввод...")
+        else:
+            self.storage.save_to_excel(self.__parsed_data)
+            # self.__save_raw_data()
     
     def __items_count(self, items) -> ItemsCounter:
         opened = 0
@@ -132,7 +154,7 @@ class Analizer:
     def __save_raw_data(self):
         if len(self.__raw_data) > 0:
             with open("raw_data_of_last_analize.json", "w", encoding='utf8') as fh:
-                json.dump(data, fh, ensure_ascii=False)
+                json.dump(self.__raw_data, fh, ensure_ascii=False)
 
 
 

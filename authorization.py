@@ -50,7 +50,7 @@ class Authorize:
             token = page_json["access_token"]
             return (token, None)
         else:
-            print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
+            # print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
             return (None, response.status_code)
         
     def __getAuthCode(self) -> str:
@@ -85,7 +85,7 @@ class Authorize:
                 case _:
                     raise AuthenticationError
         else:
-            print("Токена нет, нужно его получить")
+            print("Необходимо обновить токен.")
             token, error_code = self.__getAccessToken()
 
             match error_code:

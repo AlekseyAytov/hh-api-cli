@@ -9,6 +9,7 @@ class Settings:
 
     def __init__(self) -> None:
         self.__parse_config()
+        print("Настройки загружены.")
 
     def __parse_config(self) -> None:
         config = ConfigParser()

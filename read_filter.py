@@ -15,6 +15,7 @@ class SearchParams:
         self.__loadFilters()
         self.__adjust_filter()
         self.__substitution_area()
+        print("Параметры для поиска загружены.")
         return self.__params
 
     def __loadAreaCodes(self) -> dict:

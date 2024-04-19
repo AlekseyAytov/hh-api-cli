@@ -15,6 +15,10 @@ class Storage:
         self.file   = settings.result_file   if settings.result_file   else self.EFAULT_FILE_NAME
         self.final_path = os.path.join(self.folder, self.file)
 
+        self.__add_time_mark()
+        self.__check_folder()
+        self.__check_file_2()
+
     def __add_time_mark(self) -> None:
         # timestr = time.strftime("%Y%m%d-%H%M%S")
         timestr = time.strftime("%Y%m%d")
@@ -46,15 +50,21 @@ class Storage:
                         number = int(match[0][1:-1])
                         if number > max_number:
                             max_number = number
-            self.final_path = os.path.join(self.folder, f"{head}({max_number+1}){tail}")
+            self.final_path = os.path.join(folder, f"{head}({max_number+1}){tail}")
 
-    def save_to_excel(self, data: dict) -> None:
-        self.__add_time_mark(self)
-        self.__check_folder(self)
-        self.__check_file_2(self)
+    def save_to_excel(self, data) -> None:
+        if len(data) > 0:
+            df = pd.DataFrame.from_dict(data)
+            df.to_excel(self.final_path, index=False)
 
-        df = pd.DataFrame.from_dict(data)
-        df.to_excel(self.final_path, index=False)
+    def append_to_excel(self, data) -> None:
+        if len(data) > 0:
+            if os.path.exists(self.final_path):
+                with pd.ExcelWriter(self.final_path, mode='a') as writer:
+                    df = pd.DataFrame.from_dict(data)
+                    df.to_excel(writer, index=False)
+            else:
+                self.save_to_excel(data)
 
 
 if __name__ == '__main__':
@@ -68,4 +78,8 @@ if __name__ == '__main__':
 
     s = Settings()
     saver = Storage(s)
-    saver.save_to_excel(items)
+    # saver.save_to_excel(items)
+    saver.append_to_excel(items)
+    saver.append_to_excel(items)
+    saver.append_to_excel(items)
+    saver.append_to_excel(items)
