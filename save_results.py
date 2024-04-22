@@ -1,4 +1,3 @@
-# from xlsxwriter import Workbook
 import pandas as pd
 import os
 import time
@@ -57,6 +56,7 @@ class Storage:
             df = pd.DataFrame.from_dict(data)
             df.to_excel(self.final_path, index=False)
 
+    # TODO: доделать метод
     def append_to_excel(self, data) -> None:
         if len(data) > 0:
             if os.path.exists(self.final_path):
@@ -78,8 +78,5 @@ if __name__ == '__main__':
 
     s = Settings()
     saver = Storage(s)
-    # saver.save_to_excel(items)
-    saver.append_to_excel(items)
-    saver.append_to_excel(items)
-    saver.append_to_excel(items)
-    saver.append_to_excel(items)
+    saver.save_to_excel(items)
+    # saver.append_to_excel(items)

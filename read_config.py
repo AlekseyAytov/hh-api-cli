@@ -47,6 +47,29 @@ class Settings:
             "Authorization": "Bearer " + self.access_token
         }
     
+    def __app_directory(self) -> str:
+        home: str
+        directory: str
+
+        match os.name:
+            case "posix":
+                # if unix os
+                home = os.getenv("HOME")
+                directory = ".hhapp"
+            case "nt":
+                # if windows os
+                home = os.getenv('LOCALAPPDATA')
+                directory = "Hhapp"
+
+        return os.path.join(home, directory)
+    
+    def __load_token(self) -> None:
+        app_dir = self.__app_directory()
+
+            
+        token_dir = os.path.join(home, app_dir)
+
+    
     # def update_params(self, section, parameter, value):
     #     config = ConfigParser()
     #     config.read(self.seting_file_path)
@@ -62,3 +85,20 @@ if __name__ == '__main__':
     print(settings.client_id)
     print(settings.user_agent)
     print(settings.headers)
+
+
+    home: str
+    directory: str
+    
+    match os.name:
+        case "posix":
+            home = os.getenv("HOME")
+            directory = ".hhapp"
+        case "nt":
+            home = os.getenv('LOCALAPPDATA')
+            directory = "Hhapp"
+            print("windows")
+    
+    token_dir = os.path.join(home, directory)
+
+    print(token_dir)

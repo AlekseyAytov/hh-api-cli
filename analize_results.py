@@ -2,7 +2,6 @@ import json
 import time
 import requests
 from read_config import Settings
-from read_filter import SearchParams
 from typing import NamedTuple
 from errors import OpenResumeError
 from save_results import Storage
@@ -159,15 +158,16 @@ class Analizer:
 
 
 if __name__ == '__main__':
-    with open("test_data_2.json", "r") as fh:
+    with open("debug_data/test_data_2.json", "r", encoding='utf8') as fh:
         data = json.load(fh)
 
     s = Settings()
-    analizer = Analizer(settings=s)
-    data = analizer.get_data(data)
+    storage = Storage(settings=s)
+    analizer = Analizer(settings=s, storage=storage)
+    analizer = analizer.analize(data)
 
-    if len(data) > 0:
-        with open("test_data_resume.json", "w", encoding='utf8') as fh:
-            json.dump(data, fh, ensure_ascii=False)
+    # if len(data) > 0:
+    #     with open("test_data_resume_2.json", "w", encoding='utf8') as fh:
+    #         json.dump(data, fh, ensure_ascii=False)
 
 

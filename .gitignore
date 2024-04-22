@@ -3,3 +3,5 @@ access_data.txt
 /results/
 
 /debug_data/
+
+/__pycache__/

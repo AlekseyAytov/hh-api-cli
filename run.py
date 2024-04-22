@@ -4,6 +4,7 @@ from get_search_results import Search
 from authorization import Authorize
 from analize_results import Analizer
 from save_results import Storage
+import os
 
 def main():
     settings = Settings()
@@ -20,4 +21,14 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+        print("Для завершения нажите любую клавишу...")
+        os.system("pause")
+    except Exception  as e:
+        print("Во время выполнения возникла ошибка:")
+        print("#########################################")
+        print(e)
+        print("#########################################")
+        print("Для завершения нажите любую клавишу...")
+        os.system("pause")
