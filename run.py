@@ -8,15 +8,19 @@ import os
 
 def main():
     settings = Settings()
-    search_params = SearchParams(settings)
+    filter = SearchParams(settings).get_filter()
 
     Authorize(settings=settings)
 
-    searcher = Search(settings=settings, filter=search_params)
+    searcher = Search(settings=settings, filter=filter)
     search_data = searcher.get_search_results()
 
+    comment = filter.get("comment", None)
+    if comment:
+        comment = ", ".join(map(str, comment))
+
     saver = Storage(settings)
-    analizer = Analizer(settings=settings, storage=saver)
+    analizer = Analizer(settings=settings, storage=saver, comment=comment)
     analizer.analize(search_data)
 
 

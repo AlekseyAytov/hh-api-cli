@@ -17,9 +17,10 @@ class Analizer:
     __parsed_data: list[dict] = []
     __raw_data:    list[dict] = []
 
-    def __init__(self, settings: Settings, storage: Storage) -> None:
+    def __init__(self, settings: Settings, storage: Storage, comment=None) -> None:
         self.settings = settings
         self.storage = storage
+        self.comment = comment
 
     # def get_data(self, from_data):
     #     self.__analize(from_data)
@@ -47,20 +48,23 @@ class Analizer:
                 self.__parse_resume(page_data)
             case 403:
                 print("Требуется авторизация пользователя")
+                raise OpenResumeError
             case 404:
                 print("Резюме не существует или недоступно для текущего пользователя")
             case 429:
                 print("Для работодателя превышен лимит просмотров резюме в сутки")
+                raise OpenResumeError
             case _:
                 raise OpenResumeError
     
     def __analize(self, items) -> list[dict]:
-        counter = self.__items_count(items)
+        counter: ItemsCounter = self.__items_count(items)
         print(f"Результаты поиска: загружено {len(items)} из них {counter.opened} открыто, {counter.closed} закрыто для просмотра контактов.")
         print(f"Возможны к открытию: {counter.can_open} резюме.")
 
         interruption_flag = False
-        for item in items:
+        continue_flag = False
+        for count, item in enumerate(items):
             if interruption_flag:
                 break
 
@@ -71,16 +75,20 @@ class Analizer:
                 area = item["area"]["name"] if item.get("area", False) else ""
 
                 while True:
-                    question = input(f'Открыть контакты резюме: {title}, возраст {age}, регион {area}? (y-yes/n-no/s-stop)')
+                    if not continue_flag:
+                        question = input(f'Открыть контакты резюме-{count+1}: {title}, возраст {age}, регион {area}? (y-yes/n-no/s-stop/all-open all)')
+                    else:
+                        print(f"{count+1}")
+                        question = "y"
 
                     match question:
                         case "y":
                             print("Открываем...")
                             try:
                                 self.__open_resume(open_url)
-                            except:
+                            except Exception as err:
                                 self.storage.save_to_excel(self.__parsed_data)
-                                raise OpenResumeError
+                                raise err
                             break
                         case "n":
                             print("Пропускаем...")
@@ -90,6 +98,8 @@ class Analizer:
                             print("Прерывание...")
                             interruption_flag = True
                             break
+                        case "all":
+                            continue_flag = True
                         case _:
                             print("Некорректный ввод...")
         else:
@@ -140,14 +150,15 @@ class Analizer:
         link = resume["alternate_url"]
 
         self.__parsed_data.append({
-            "Date":  timestr,
-            "ID":    resume_id,
-            "Phone": cell_phone,
-            "Name":  name,
-            "Area":  area,
-            "Age":   age,
-            "Title": wish_title,
-            "url":   link,
+            "Date"   : timestr,
+            "ID"     : resume_id,
+            "Phone"  : cell_phone,
+            "Name"   : name,
+            "Area"   : area,
+            "Age"    : age,
+            "Title"  : wish_title,
+            "url"    : link,
+            "comment": self.comment,
         })
 
     def __save_raw_data(self):
@@ -163,7 +174,8 @@ if __name__ == '__main__':
 
     s = Settings()
     storage = Storage(settings=s)
-    analizer = Analizer(settings=s, storage=storage)
+    comment = ", ".join(["one", "1", "two"])
+    analizer = Analizer(settings=s, storage=storage, comment=comment)
     analizer = analizer.analize(data)
 
     # if len(data) > 0:

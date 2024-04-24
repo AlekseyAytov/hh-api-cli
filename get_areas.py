@@ -16,9 +16,13 @@ def get_areas(settings: Settings):
 if __name__ == '__main__':
     s = Settings()
     res, err = get_areas(s)
-    if err == None:
-        for country in res:
-            if country["name"] == "Россия":
-                regions = country["areas"]
-                for area in regions:
-                    print(area["name"], ":", area["id"])
+    with open("debug_data/areas.txt", "w", encoding='utf8') as fh:
+
+        if err == None:
+            for country in res:
+                if country["name"] == "Россия":
+                    regions = country["areas"]
+                    for area in regions:
+                        fh.write(f"{area["name"]}:{area["id"]}\n")
+                        for region in area["areas"]:
+                            fh.write(f"{region["name"]}:{region["id"]}\n")

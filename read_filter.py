@@ -41,44 +41,6 @@ class SearchParams:
             
 
 if __name__ == '__main__':
-
-    payload = {
-        "text": "визовый центр",
-        "area": [
-            3,
-        ],
-        "job_search_status": [
-            "active_search",
-            # "looking_for_offers"
-        ],
-        # "age_from": 20,
-        # "age_to": 50,
-        "employment": [
-            "full",
-            "part"
-        ],
-        "schedule": [
-            "fullDay",
-            "shift",
-            "flexible",
-            "remote"
-        ],
-        # "professional_role": [
-        #     83
-        # ],
-        # "salary_to": 50000,
-        "citizenship": 113,
-        # "period": 3,
-        "with_job_search_status": "true", # Параметр для просмотра в резюме статуса поиска кандидата
-        "label": [
-            "only_with_age", # нужен для того, чтобы искать только с указанием возраста
-            "exclude_viewed_by_employer_id", # Скрыть резюме, просмотренные всей компанией
-            # "exclude_viewed_by_user_id" # Скрыть резюме, просмотренные мной
-         ],
-        "search_in_responses": True,
-        "page": 0,
-        "per_page": 10,
-    }
     
     s = Settings()
     params = SearchParams(s)

@@ -61,9 +61,9 @@ class Authorize:
         print("")
         print(auth_url)
         print("")
-        print("После авторизации на ресурсе hh.ru и перенаправления на сайт akbars.ru из адресной строки браузера")
+        print("После авторизации на ресурсе hh.ru и перенаправления на сайт компании из адресной строки браузера")
         print("скопируйте буквенно-цифровой код после знака '=' в поле ниже и нажмите Enter.")
-        authCode = input("-> ")
+        authCode = input("->").strip()
         return authCode
     
     def saveToken(self, token):
