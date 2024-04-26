@@ -7,9 +7,15 @@ from errors import OpenResumeError
 from save_results import Storage
 
 class ItemsCounter(NamedTuple):
-    opened:   int
-    closed:   int
+    opened  : int
+    closed  : int
     can_open: int
+
+class ItemInfo(NamedTuple):
+    title   : str
+    age     : str
+    area    : str
+    open_url: str
 
 
 class Analizer:
@@ -17,14 +23,11 @@ class Analizer:
     __parsed_data: list[dict] = []
     __raw_data:    list[dict] = []
 
-    def __init__(self, settings: Settings, storage: Storage, comment=None) -> None:
+    def __init__(self, settings: Settings, storage: Storage, comment: str = None, open_limit: int = None) -> None:
         self.settings = settings
         self.storage = storage
         self.comment = comment
-
-    # def get_data(self, from_data):
-    #     self.__analize(from_data)
-    #     return self.__parsed_data
+        self.open_limit = open_limit
     
     def analize(self, from_data):
         self.__analize(from_data)
@@ -48,35 +51,37 @@ class Analizer:
                 self.__parse_resume(page_data)
             case 403:
                 print("Требуется авторизация пользователя")
-                raise OpenResumeError
+                # raise OpenResumeError
             case 404:
                 print("Резюме не существует или недоступно для текущего пользователя")
             case 429:
                 print("Для работодателя превышен лимит просмотров резюме в сутки")
-                raise OpenResumeError
+                # raise OpenResumeError
             case _:
                 raise OpenResumeError
     
     def __analize(self, items) -> list[dict]:
-        counter: ItemsCounter = self.__items_count(items)
+        counter: ItemsCounter = self.__make_items_counter(items)
         print(f"Результаты поиска: загружено {len(items)} из них {counter.opened} открыто, {counter.closed} закрыто для просмотра контактов.")
         print(f"Возможны к открытию: {counter.can_open} резюме.")
 
         interruption_flag = False
         continue_flag = False
+        open_counter = 0
         for count, item in enumerate(items):
             if interruption_flag:
+                print("Прерывание...")
                 break
 
-            open_url = item["actions"]["get_with_contact"]["url"] if item.get("actions", False) and item["actions"].get("get_with_contact", False) else None
-            if open_url:
-                title = item.get("title", "")
-                age = item.get("age", "")
-                area = item["area"]["name"] if item.get("area", False) else ""
-
+            if  self.open_limit and open_counter >=  self.open_limit:
+                print(f"Достигнут лимит открытий резюме - {self.open_limit}.")
+                break
+            
+            info: ItemInfo = self.__make_item_info(item)
+            if info.open_url:
                 while True:
                     if not continue_flag:
-                        question = input(f'Открыть контакты резюме-{count+1}: {title}, возраст {age}, регион {area}? (y-yes/n-no/s-stop/all-open all)')
+                        question = input(f'Открыть контакты резюме-{count+1}: {info.title}, возраст {info.age}, регион {info.area}? (y-yes/n-no/s-stop/all-open all): ')
                     else:
                         print(f"{count+1}")
                         question = "y"
@@ -85,7 +90,8 @@ class Analizer:
                         case "y":
                             print("Открываем...")
                             try:
-                                self.__open_resume(open_url)
+                                open_counter += 1
+                                self.__open_resume(info.open_url)
                             except Exception as err:
                                 self.storage.save_to_excel(self.__parsed_data)
                                 raise err
@@ -94,19 +100,17 @@ class Analizer:
                             print("Пропускаем...")
                             break
                         case "s":
-                            self.storage.save_to_excel(self.__parsed_data)
-                            print("Прерывание...")
                             interruption_flag = True
                             break
                         case "all":
                             continue_flag = True
                         case _:
                             print("Некорректный ввод...")
-        else:
-            self.storage.save_to_excel(self.__parsed_data)
-            # self.__save_raw_data()
+        
+        self.storage.save_to_excel(self.__parsed_data)
+        # self.__save_raw_data()
     
-    def __items_count(self, items) -> ItemsCounter:
+    def __make_items_counter(self, items) -> ItemsCounter:
         opened = 0
         closed = 0
         can_open = 0
@@ -121,6 +125,12 @@ class Analizer:
 
         return ItemsCounter(opened=opened, closed=closed, can_open=can_open)
 
+    def __make_item_info(self, item) -> ItemInfo:
+        title = item.get("title", "")
+        age = item.get("age", "")
+        area = item["area"]["name"] if item.get("area", False) else ""
+        open_url = item["actions"]["get_with_contact"]["url"] if item.get("actions", False) and item["actions"].get("get_with_contact", False) else None
+        return ItemInfo(title=title, age=age, area=area, open_url=open_url)
 
     # распарсить номер мобльного
     def __parse_phone_number(self, contacts) -> str:
@@ -175,7 +185,7 @@ if __name__ == '__main__':
     s = Settings()
     storage = Storage(settings=s)
     comment = ", ".join(["one", "1", "two"])
-    analizer = Analizer(settings=s, storage=storage, comment=comment)
+    analizer = Analizer(settings=s, storage=storage, comment=comment, open_limit=2)
     analizer = analizer.analize(data)
 
     # if len(data) > 0:

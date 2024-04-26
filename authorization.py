@@ -1,8 +1,24 @@
 import requests
 from read_config import Settings
-from errors import *
+from errors import AuthenticationError
+from typing import NamedTuple
 import webbrowser
 
+class CurrentUser(NamedTuple):
+    first_name : str
+    last_name  : str
+    middle_name: str
+
+    @property
+    def full_name(self) -> str:
+        full_name = ""
+        if self.first_name:
+            full_name = full_name + self.first_name
+        if self.middle_name:
+            full_name = full_name + " " + self.middle_name
+        if self.last_name:
+            full_name = full_name + " " + self.last_name
+        return full_name
 
 class Authorize:
 
@@ -11,7 +27,6 @@ class Authorize:
         self.checkToken()
         print("Авторизация закончена.")
         
-
     def __isTokenExist(self) -> bool:
         self.token = self.settings.access_token
         return True if self.token != None else False
@@ -19,29 +34,32 @@ class Authorize:
     def get_user_info(self) -> tuple[str, int]:
         api_url = "me"
         url = self.settings.base_url + api_url
-        print(f"Делаю запрос для получения информации о пользователе: {url}")
+        print(f"Делаю запрос для получения информации о пользователе.")
 
         response = requests.request("GET", url, headers=self.settings.headers)
         if response.status_code == 200:
-            page_json   = response.json()
-            last_name   = page_json.get("last_name")   or ""
-            first_name  = page_json.get("first_name")  or ""
-            middle_name = page_json.get("middle_name") or ""
-            userName    =  f"{last_name} {first_name} {middle_name}"
-            return (userName, None)
+            page_json = response.json()
+            user = self.__make_user(page_json)
+            return (user.full_name, None)
         else:
             # print(f'Ошибка: {response.status_code} - {response.reason}. {response.json()}')
             return (None, response.status_code)
+        
+    def __make_user(self, data) -> CurrentUser:
+        last_name   = data.get("last_name")   or None
+        first_name  = data.get("first_name")  or None
+        middle_name = data.get("middle_name") or None
+        return CurrentUser(first_name=first_name, last_name=last_name, middle_name=middle_name)
 
     def __getAccessToken(self) -> tuple[str, int]:
         api_url = "https://hh.ru/oauth/token"
         authCode = self.__getAuthCode()
 
         params = {
-            "client_id": self.settings.client_id,
+            "client_id"    : self.settings.client_id,
             "client_secret": self.settings.client_secret,
-            "code": authCode,
-            "grant_type": "authorization_code"
+            "code"         : authCode,
+            "grant_type"   : "authorization_code"
         }
 
         response = requests.request("POST", api_url, params=params)

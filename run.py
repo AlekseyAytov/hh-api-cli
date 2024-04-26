@@ -19,8 +19,12 @@ def main():
     if comment:
         comment = ", ".join(map(str, comment))
 
+    limit = filter.get("open_limit", None)
+    if limit:
+        limit = int(limit[0])
+
     saver = Storage(settings)
-    analizer = Analizer(settings=settings, storage=saver, comment=comment)
+    analizer = Analizer(settings=settings, storage=saver, comment=comment, open_limit=limit)
     analizer.analize(search_data)
 
 
@@ -32,7 +36,7 @@ if __name__ == '__main__':
     except Exception  as e:
         print("Во время выполнения возникла ошибка:")
         print("#########################################")
-        print(e)
+        print(e.with_traceback)
         print("#########################################")
         print("Для завершения нажите любую клавишу...")
         os.system("pause")
