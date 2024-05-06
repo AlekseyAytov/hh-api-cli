@@ -2,26 +2,35 @@ import json
 import time
 import requests
 from read_config import Settings
-from typing import NamedTuple
+from dataclasses import dataclass
 from errors import OpenResumeError
 from save_results import Storage
 from models import Item, Contact
 
-class ItemsCounter(NamedTuple):
-    amount  : int
-    opened  : int
-    closed  : int
-    can_open: int
+@dataclass
+class ItemsCounter:
+    amount   : int = 0
+    opened   : int = 0
+    closed   : int = 0
+    can_open : int = 0
+    commented: int = 0
+
 class AnalizerTyped:
 
     __parsed_data: list[dict] = []
     # __raw_data:    list[dict] = []
 
-    def __init__(self, settings: Settings, storage: Storage, comment: str = None, open_limit: int = None) -> None:
+    def __init__(self,
+                settings: Settings, 
+                storage: Storage, 
+                comment: str = None, 
+                open_limit: int = None, 
+                pass_commented: bool = False) -> None:
         self.settings = settings
         self.storage = storage
         self.comment = comment
         self.open_limit = open_limit
+        self.pass_commented = pass_commented
     
     def analize(self, from_data):
         self.__analize(from_data)
@@ -56,8 +65,16 @@ class AnalizerTyped:
     
     def __analize(self, items: list[Item]) -> list[dict]:
         counter: ItemsCounter = self.__make_items_counter(items)
-        print(f"Результаты поиска: загружено {counter.amount} из них {counter.opened} открыто, {counter.closed} закрыто для просмотра контактов.")
-        print(f"Возможны к открытию: {counter.can_open} резюме.")
+        print(counter)
+        if not self.pass_commented:
+            print(f"Результаты поиска: загружено {counter.amount} из них {counter.opened} открыто, "
+                  f"{counter.closed} закрыто для просмотра контактов.")
+            print(f"Возможны к открытию: {counter.can_open} резюме.")
+        else:
+            print(f"Результаты поиска: загружено {counter.amount} из них {counter.opened} открыто, "
+                  f"{counter.closed} закрыто для просмотра контактов, "
+                  f"{counter.commented} владельцев резюме имеют комментарии.")
+            print(f"Возможны к открытию: {counter.can_open - counter.commented} резюме.")
 
         interruption_flag = False
         continue_flag = False
@@ -70,11 +87,16 @@ class AnalizerTyped:
             if  self.open_limit and open_counter >=  self.open_limit:
                 print(f"Достигнут лимит открытий резюме - {self.open_limit}.")
                 break
+
+            # пропустить резюме, владелец которого имеет комментарий
+            if self.pass_commented and item.owner.comments.counters.total > 0:
+                continue
             
             if item.actions.get_with_contact:
                 while True:
                     if not continue_flag:
-                        question = input(f'Открыть контакты резюме-{count+1}: {item.title}, возраст {item.age}, регион {item.area.name}? (y-yes/n-no/s-stop/all-open all): ')
+                        question = input(f'Открыть контакты резюме-{count+1}: {item.title}, '
+                                         f'возраст {item.age}, регион {item.area.name}? (y-yes/n-no/s-stop/all-open all): ')
                     else:
                         print(f"{count+1}")
                         question = "y"
@@ -104,19 +126,21 @@ class AnalizerTyped:
         # self.__save_raw_data()
     
     def __make_items_counter(self, items: list[Item]) -> ItemsCounter:
-        opened = 0
-        closed = 0
-        can_open = 0
+        counter = ItemsCounter()
+        counter.amount = len(items)
         for item in items:
             if item.can_view_full_info:
-                opened += 1
+                counter.opened += 1
             else:
-                closed += 1
+                counter.closed += 1
             
             if item.actions.get_with_contact:
-                can_open += 1
+                counter.can_open += 1
 
-        return ItemsCounter(amount=len(items), opened=opened, closed=closed, can_open=can_open)
+            if item.owner.comments.counters.total > 0:
+                counter.commented += 1
+
+        return counter
 
     # распарсить номер мобльного
     def __parse_phone_number(self, contacts: list[Contact]) -> str:
@@ -163,7 +187,7 @@ class AnalizerTyped:
 
 if __name__ == '__main__':
     # Для тестирования класса AnalizerTyped забрать json из файла
-    with open("debug_data/test_data_2.json", "r", encoding='utf8') as fh:
+    with open("debug_data/test_data_5.json", "r", encoding='utf8') as fh:
         data = json.load(fh)
     # и преобразовать его в список из объектов Item
     network_data: list[Item] = list(map(lambda x: Item(**x), data))
@@ -171,5 +195,5 @@ if __name__ == '__main__':
     s = Settings()
     storage = Storage(settings=s)
     comment = ", ".join(["one", "1", "two"])
-    analizer = AnalizerTyped(settings=s, storage=storage, comment=comment, open_limit=2)
+    analizer = AnalizerTyped(settings=s, storage=storage, comment=comment, open_limit=2, pass_commented=True)
     analizer = analizer.analize(network_data)

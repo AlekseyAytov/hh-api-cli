@@ -24,8 +24,20 @@ def main():
     if limit:
         limit = int(limit[0])
 
+    pass_commented = filter.get("pass_commented", False)
+    if pass_commented and "pass" in pass_commented:
+        pass_commented = True
+    else:
+        pass_commented = False
+
     saver = Storage(settings)
-    analizer = AnalizerTyped(settings=settings, storage=saver, comment=comment, open_limit=limit)
+    analizer = AnalizerTyped(
+            settings=settings, 
+            storage=saver, 
+            comment=comment, 
+            open_limit=limit, 
+            pass_commented=pass_commented
+        )
     analizer.analize(from_data=search_data)
 
 
